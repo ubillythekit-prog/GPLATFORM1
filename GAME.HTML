@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JS Doodle Jump Clone</title>
+    <style>
+        body { background: #222; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        canvas { background: #fafafa; border: 5px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="900" height="600"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Game Constants
+    const gravity = 0.25;
+    const jumpStrength = -10;
+    let platforms = [];
+    let score = 0;
+
+    const player = {
+        x: 200, y: 300,
+        width: 30, height: 30,
+        vx: 0, vy: 0
+    };
+
+    // Initialize Platforms
+    function init() {
+        for (let i = 0; i < 7; i++) {
+            platforms.push({
+                x: Math.random() * (canvas.width - 60),
+                y: i * 100,
+                width: 60, height: 10
+            });
+        }
+    }
+
+    function update() {
+        // Apply Physics
+        player.vy += gravity;
+        player.y += player.vy;
+        player.x += player.vx;
+
+        // Screen Wrap (Left/Right)
+        if (player.x > canvas.width) player.x = 0;
+        if (player.x < 0) player.x = canvas.width;
+
+        // Platform Collision & Camera Movement
+        platforms.forEach(plat => {
+            // Check if falling and hitting platform
+            if (player.vy > 0 && 
+                player.x < plat.x + plat.width &&
+                player.x + player.width > plat.x &&
+                player.y + player.height > plat.y &&
+                player.y + player.height < plat.y + plat.height + player.vy) {
+                player.vy = jumpStrength;
+            }
+
+            // Move platforms down if player is high up
+            if (player.y < canvas.height / 2) {
+                let diff = canvas.height / 2 - player.y;
+                player.y = canvas.height / 2;
+                plat.y += diff;
+                score += Math.floor(diff / 10);
+
+                // Recycle platforms that fall off screen
+                if (plat.y > canvas.height) {
+                    plat.y = 0;
+                    plat.x = Math.random() * (canvas.width - plat.width);
+                }
+            }
+        });
+
+        // Game Over Check
+        if (player.y > canvas.height) {
+            alert("Game Over! Score: " + score);
+            location.reload();
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw Player
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+
+        // Draw Platforms
+        ctx.fillStyle = '#2ecc71';
+        platforms.forEach(plat => ctx.fillRect(plat.x, plat.y, plat.width, plat.height));
+
+        // Draw Score
+        ctx.fillStyle = '#333';
+        ctx.font = '20px Arial';
+        ctx.fillText("Score: " + score, 10, 30);
+    }
+
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    // Controls
+    window.addEventListener('keydown', e => {
+        if (e.key === 'ArrowLeft') player.vx = -5;
+        if (e.key === 'ArrowRight') player.vx = 5;
+    });
+    window.addEventListener('keyup', e => {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') player.vx = 0;
+    });
+
+    init();
+    loop();
+</script>
+</body>
+</html>
